@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Onyx Note - Seu segundo cérebro para guardar ideias, organizar conhecimento e acessar tudo em um só lugar.">
+    <title>Onyx Note ✦ Dashboard</title>
+    <!-- Substituindo a fonte para Times New Roman do Google Fonts se desejar, mas usaremos a system default serif -->
+    <link rel="stylesheet" href="/css/style.css?v=2">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Animated background -->
+        <div class="bg-gradient"></div>
+        <div class="bg-orbs">
+            <!-- Removendo os orbs coloridos para o visual minimalista -->
+        </div>
+
+        <!-- Toast notifications -->
+        <div id="toast-container"></div>
+
+        <!-- Theme Toggle -->
+        <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="Alternar Tema Escuro/Claro">
+            🌓
+        </button>
+
+        <!-- === AUTH VIEW === -->
+        <div id="auth-view" class="view active">
+            <div class="auth-container">
+                <div class="auth-brand">
+                    <h1>Onyx Note</h1>
+                    <p class="brand-tagline">Seu segundo cérebro para guardar ideias, organizar conhecimento e acessar
+                        tudo em um só lugar.</p>
+                </div>
+
+                <div class="auth-card glass-card">
+                    <div class="auth-tabs">
+                        <button id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
+                        <button id="tab-register" class="auth-tab" onclick="switchAuthTab('register')">Criar
+                            Conta</button>
+                        <div class="tab-indicator"></div>
+                    </div>
+
+                    <form id="login-form" class="auth-form active" onsubmit="handleLogin(event)">
+                        <div class="input-group">
+                            <label for="login-username">E-mail</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">📧</span>
+                                <input type="email" id="login-username" placeholder="Seu endereço de e-mail" required
+                                    autocomplete="username">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="login-password">Senha</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">🔒</span>
+                                <input type="password" id="login-password" placeholder="Sua senha" required
+                                    autocomplete="current-password">
+                                <button type="button" class="btn-icon password-toggle"
+                                    onclick="togglePasswordVisibility('login-password', this)">👁️</button>
+                            </div>
+                            <div class="forgot-password">
+                                <a href="#" onclick="openModal('forgot-password-modal')">Esqueci minha senha</a>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+                            <span class="btn-text">Entrar no Sistema</span>
+                            <span class="btn-loader"></span>
+                        </button>
+                    </form>
+
+                    <form id="register-form" class="auth-form" onsubmit="handleRegister(event)">
+                        <div class="input-group">
+                            <label for="register-username">E-mail</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">📧</span>
+                                <input type="email" id="register-username" placeholder="Seu melhor e-mail" required
+                                    autocomplete="username">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="register-password">Senha</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">🔒</span>
+                                <input type="password" id="register-password" placeholder="Crie uma senha segura"
+                                    required autocomplete="new-password">
+                                <button type="button" class="btn-icon password-toggle"
+                                    onclick="togglePasswordVisibility('register-password', this)">👁️</button>
+                            </div>
+                            <ul class="password-requirements" id="register-password-requirements">
+                                <li id="req-length" class="invalid">Mínimo de 8 caracteres</li>
+                                <li id="req-uppercase" class="invalid">1 letra maiúscula</li>
+                                <li id="req-number" class="invalid">1 número</li>
+                            </ul>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="terms-checkbox" required>
+                            <label for="terms-checkbox">Eu concordo com os Termos de Uso e Política de
+                                Privacidade.</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full" id="register-btn">
+                            <span class="btn-text">Criar Conta</span>
+                            <span class="btn-loader"></span>
+                        </button>
+                    </form>
+
+                    <div class="auth-divider">
+                        <span>ou</span>
+                    </div>
+
+                    <button type="button" class="btn btn-outline btn-full google-btn"
+                        onclick="window.location.href='/api/auth/google/login'">
+                        <span class="google-icon">G</span> Entrar com Google
+                    </button>
+                </div>
+
+                <p class="auth-footer">Onyx Note &bull; Minimalismo e Foco</p>
+            </div>
+        </div>
+
+        <!-- === DASHBOARD VIEW === -->
+        <div id="dashboard-view" class="view">
+            <!-- Top navbar -->
+            <nav class="navbar glass-nav">
+                <div class="nav-brand">
+                    <span class="nav-title">Onyx Note</span>
+                </div>
+                <div class="nav-links">
+                    <button class="nav-link active" onclick="switchDashboardTab('overview')" data-tab="overview">
+                        <span>📊</span> Painel
+                    </button>
+                    <button class="nav-link" onclick="switchDashboardTab('search')" data-tab="search">
+                        <span>🔍</span> Pesquisar
+                    </button>
+                    <button class="nav-link" onclick="switchDashboardTab('notes')" data-tab="notes">
+                        <span>📝</span> Anotações
+                    </button>
+                    <button class="nav-link" onclick="switchDashboardTab('documents')" data-tab="documents">
+                        <span>📄</span> Documentos
+                    </button>
+                </div>
+                <div class="nav-user">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <span class="user-name" id="user-name">Usuário</span>
+                    <button class="btn btn-ghost btn-sm" onclick="handleLogout()" id="logout-btn">Sair</button>
+                </div>
+            </nav>
+
+            <!-- Dashboard content -->
+            <main class="dashboard-content">
+                <!-- Overview Tab -->
+                <section id="tab-overview" class="dashboard-tab active">
+                    <div class="section-header">
+                        <h2>Bem-vindo de volta, <span id="welcome-name">Capitão</span>!</h2>
+                        <p>Aqui está o resumo do seu Onyx Note</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon">📄</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-docs">0</span>
+                                <span class="stat-label">Documentos</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon">📝</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-notes">0</span>
+                                <span class="stat-label">Anotações</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon">🔍</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-searches">0</span>
+                                <span class="stat-label">Pesquisas</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon">🛡️</div>
+                            <div class="stat-info">
+                                <span class="stat-value">Ativo</span>
+                                <span class="stat-label">Estado</span>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-info">
+                                <span class="stat-value">JWT</span>
+                                <span class="stat-label">Segurança</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Upload -->
+                    <div class="upload-section glass-card">
+                        <div class="upload-header">
+                            <h3>📤 Enviar Novo Documento</h3>
+                            <p>Arraste um arquivo ou clique para selecionar</p>
+                        </div>
+                        <div class="upload-zone" id="upload-zone">
+                            <div class="upload-icon">📁</div>
+                            <p class="upload-text">Arraste seu arquivo aqui</p>
+                            <p class="upload-subtext">ou clique para selecionar um arquivo</p>
+                            <input type="file" id="file-input" hidden>
+                        </div>
+                        <div class="upload-progress" id="upload-progress" style="display:none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill"></div>
+                            </div>
+                            <p class="progress-text" id="progress-text">Enviando...</p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Search -->
+                    <div class="quick-search glass-card">
+                        <h3>🔍 Pesquisa Rápida</h3>
+                        <div class="search-input-group">
+                            <input type="text" id="quick-search-input"
+                                placeholder="Pergunte algo sobre seus documentos..." class="search-input">
+                            <button class="btn btn-primary" onclick="handleQuickSearch()"
+                                id="quick-search-btn">Pesquisar</button>
+                        </div>
+                        <div id="quick-search-results" class="search-results"></div>
+                    </div>
+                </section>
+
+                <!-- Search Tab -->
+                <section id="tab-search" class="dashboard-tab">
+                    <div class="section-header">
+                        <h2>🔍 Pesquisa Inteligente</h2>
+                        <p>Faça perguntas à sua base de conhecimento</p>
+                    </div>
+
+                    <div class="search-section glass-card">
+                        <div class="search-input-group search-lg">
+                            <input type="text" id="main-search-input"
+                                placeholder="Ex: Qual é o conceito principal do capítulo 3?" class="search-input">
+                            <button class="btn btn-primary btn-lg" onclick="handleMainSearch()" id="main-search-btn">
+                                <span class="btn-text">Pesquisar</span>
+                                <span class="btn-loader"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="main-search-results" class="search-results-list"></div>
+                </section>
+
+                <!-- Notes Tab -->
+                <section id="tab-notes" class="dashboard-tab">
+                    <div class="section-header">
+                        <div class="section-header-row">
+                            <div>
+                                <h2>📝 Suas Anotações</h2>
+                                <p>Pensamentos, resumos e ideias indexadas no seu Onyx Note</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="createNewNote()">
+                                ➕ Nova Anotação
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="notes-container">
+                        <!-- Notes Sidebar List -->
+                        <div class="notes-sidebar glass-card">
+                            <div id="notes-list" class="notes-list">
+                                <div class="loading-state">
+                                    <div class="spinner"></div>
+                                    <p>Carregando anotações...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Content Editor -->
+                        <div class="note-editor-container glass-card" id="note-editor-container" style="display:none;">
+                            <div class="note-editor-header">
+                                <input type="text" id="note-title" class="note-title-input"
+                                    placeholder="Título da Anotação" oninput="handleNoteInput()">
+                                <div class="note-actions">
+                                    <span id="autosave-indicator" class="autosave-indicator"></span>
+                                    <button class="btn btn-danger btn-sm" onclick="handleDeleteCurrentNote()">🗑️
+                                        Apagar</button>
+                                </div>
+                            </div>
+                            <textarea id="note-content" class="note-content-input"
+                                placeholder="Comece a escrever sua anotação aqui... O texto será salvo automaticamente e servirá de fonte para futuras pesquisas."
+                                oninput="handleNoteInput()"></textarea>
+                        </div>
+
+                        <div id="empty-note-state" class="empty-state glass-card" style="flex: 1;">
+                            <div class="empty-icon">📝</div>
+                            <h3>Nenhuma anotação selecionada</h3>
+                            <p>Selecione uma anotação na lista ou crie uma nova para começar a escrever.</p>
+                            <button class="btn btn-primary" onclick="createNewNote()">Nova Anotação</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Documents Tab -->
+                <section id="tab-documents" class="dashboard-tab">
+                    <div class="section-header">
+                        <div class="section-header-row">
+                            <div>
+                                <h2>📄 Seus Documentos</h2>
+                                <p>Gerencie sua biblioteca de conhecimento</p>
+                            </div>
+                            <button class="btn btn-primary"
+                                onclick="document.getElementById('file-input-docs').click()">
+                                📤 Enviar Arquivo
+                            </button>
+                            <input type="file" id="file-input-docs" hidden onchange="handleFileUpload(this.files[0])">
+                        </div>
+                    </div>
+
+                    <div id="documents-list" class="documents-grid">
+                        <div class="loading-state glass-card">
+                            <div class="spinner"></div>
+                            <p>Carregando documentos...</p>
+                        </div>
+                    </div>
+
+                    <div id="empty-docs" class="empty-state glass-card" style="display:none;">
+                        <div class="empty-icon">📂</div>
+                        <h3>Nenhum documento ainda</h3>
+                        <p>Envie seu primeiro arquivo para começar a construir seu Onyx Note!</p>
+                        <button class="btn btn-primary"
+                            onclick="document.getElementById('file-input-docs').click()">Enviar Agora</button>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Minimalist Footer -->
+            <footer class="app-footer">
+                <a href="http://linkedin.com/in/breno-dos-santos-santana-2723a4213" target="_blank"
+                    rel="noopener noreferrer">in breno-dos-santos-santana-2723a4213</a>
+            </footer>
+        </div>
+    </div>
+
+    <!-- === MODALS DE RECUPERAÇÃO DE SENHA === -->
+    <div id="forgot-password-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Recuperar Senha</h3>
+                <button class="btn-icon close-modal" onclick="closeModal('forgot-password-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Insira o seu e-mail abaixo. Enviaremos um link de recuperação para a sua caixa de entrada.</p>
+                <form id="forgot-password-form" onsubmit="handleForgotPassword(event)">
+                    <div class="input-group">
+                        <label for="forgot-email">E-mail</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">📧</span>
+                            <input type="email" id="forgot-email" placeholder="seu@email.com" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" id="forgot-btn">
+                        <span class="btn-text">Enviar Link</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="reset-password-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Redefinir Senha</h3>
+                <button class="btn-icon close-modal" onclick="closeModal('reset-password-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Crie uma nova senha segura.</p>
+                <form id="reset-password-form" onsubmit="handleResetPassword(event)">
+                    <input type="hidden" id="reset-token" value="">
+                    <div class="input-group">
+                        <label for="reset-password">Nova Senha</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="reset-password" placeholder="Crie uma nova senha segura"
+                                required>
+                            <button type="button" class="btn-icon password-toggle"
+                                onclick="togglePasswordVisibility('reset-password', this)">👁️</button>
+                        </div>
+                        <ul class="password-requirements" id="reset-password-requirements">
+                            <li id="req-reset-length" class="invalid">Mínimo de 8 caracteres</li>
+                            <li id="req-reset-uppercase" class="invalid">1 letra maiúscula</li>
+                            <li id="req-reset-number" class="invalid">1 número</li>
+                        </ul>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" id="reset-btn">
+                        <span class="btn-text">Salvar Senha</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js?v=2"></script>
+    <script src="/js/app.js?v=2"></script>
+</body>
+
+</html>

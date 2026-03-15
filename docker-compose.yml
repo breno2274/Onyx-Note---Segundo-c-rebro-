@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./auth-service:/app
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  user-service:
+    build: ./user-service
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+  search-service:
+    build: ./search-service
+    ports:
+      - "8002:8002"
+    volumes:
+      - search-data:/app/chroma_data
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - user-service
+      - search-service
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+volumes:
+  auth-data:
+  search-data:
