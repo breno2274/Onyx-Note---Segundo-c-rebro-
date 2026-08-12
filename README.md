@@ -1,14 +1,6 @@
----
-title: Onyx Note
-emoji: 📝
-colorFrom: gray
-colorTo: gray
-sdk: docker
-app_port: 7860
-pinned: false
----
 
-# Onyx Note - O Seu Segundo Cérebro
+
+# Onyx Note - Segundo Cérebro
 
 
 
