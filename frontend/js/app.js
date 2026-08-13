@@ -1,13 +1,6 @@
-/**
- * Segundo Cérebro - Application Logic
- * Router SPA, gestão de estado, e interações
- */
-
-// --- State ---
 let currentUser = null;
 let searchCount = parseInt(localStorage.getItem('searchCount') || '0');
 
-// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initApp();
@@ -15,10 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupKeyboardShortcuts();
 });
 
-// --- Theme Management ---
 function initTheme() {
-    const isLight = localStorage.getItem('onyxTheme') === 'light';
-    if (isLight) {
+    if (localStorage.getItem('onyxTheme') === 'light') {
         document.documentElement.classList.add('light-theme');
     }
 }
@@ -28,20 +19,21 @@ function toggleTheme() {
     localStorage.setItem('onyxTheme', isLight ? 'light' : 'dark');
 }
 
-// --- Password Visibility ---
 function togglePasswordVisibility(inputId, btnElement) {
     const input = document.getElementById(inputId);
+    const eyeOpen = '<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3.5"/></svg>';
+    const eyeClosed = '<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3.5 3.5 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+    
     if (input.type === 'password') {
         input.type = 'text';
-        btnElement.textContent = '🙈';
+        btnElement.innerHTML = eyeClosed;
     } else {
         input.type = 'password';
-        btnElement.textContent = '👁️';
+        btnElement.innerHTML = eyeOpen;
     }
 }
 
 function initApp() {
-    // Verificar se existe um token (vindo do Login do Google)
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const error = urlParams.get('error');
@@ -56,8 +48,8 @@ function initApp() {
     if (token) {
         localStorage.setItem('token', token);
         if (typeof api !== 'undefined') api.token = token;
-        window.history.replaceState({}, document.title, "/"); // Limpa a URL
-        showToast('Login com Google efetuado com sucesso! 🎉', 'success');
+        window.history.replaceState({}, document.title, "/");
+        showToast('Login com Google efetuado com sucesso!', 'success');
     }
 
     if (error) {
@@ -71,7 +63,6 @@ function initApp() {
         showAuth();
     }
 
-    // Bind real-time password requirements UI
     const regPwd = document.getElementById('register-password');
     if (regPwd) {
         regPwd.addEventListener('input', (e) => checkPasswordRequirements(e.target.value, ''));
@@ -82,7 +73,6 @@ function initApp() {
     }
 }
 
-// --- View Management ---
 function showAuth() {
     document.getElementById('auth-view').classList.add('active');
     document.getElementById('dashboard-view').classList.remove('active');
@@ -92,11 +82,9 @@ function showDashboard() {
     document.getElementById('auth-view').classList.remove('active');
     document.getElementById('dashboard-view').classList.add('active');
     loadProfile();
-    loadDocuments();
-    loadNotes();
+    navigateZettel('dashboard');
 }
 
-// --- Auth Tab Switch ---
 function switchAuthTab(tab) {
     document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
@@ -105,7 +93,6 @@ function switchAuthTab(tab) {
     document.getElementById(`${tab}-form`).classList.add('active');
 }
 
-// --- Auth Handlers ---
 async function handleLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('login-btn');
@@ -118,10 +105,9 @@ async function handleLogin(e) {
     }
 
     btn.classList.add('loading');
-
     try {
         await api.login(username, password);
-        showToast(`Bem-vindo, ${username}! 🎉`, 'success');
+        showToast(`Bem-vindo, ${username}!`, 'success');
         showDashboard();
     } catch (err) {
         showToast(err.message, 'error');
@@ -135,15 +121,9 @@ async function handleRegister(e) {
     const btn = document.getElementById('register-btn');
     const email = document.getElementById('register-username').value.trim();
     const password = document.getElementById('register-password').value;
-    const termsCheck = document.getElementById('terms-checkbox').checked;
 
     if (!email || !password) {
         showToast('Preencha todos os campos!', 'error');
-        return;
-    }
-
-    if (!termsCheck) {
-        showToast('É necessário aceitar os Termos de Uso e Privacidade.', 'error');
         return;
     }
 
@@ -153,11 +133,9 @@ async function handleRegister(e) {
     }
 
     btn.classList.add('loading');
-
     try {
         await api.register(email, password);
-        showToast('Conta criada com sucesso! Fazendo login... 🚀', 'success');
-        // Auto-login after register
+        showToast('Conta criada com sucesso! Fazendo login...', 'success');
         await api.login(email, password);
         showDashboard();
     } catch (err) {
@@ -170,44 +148,55 @@ async function handleRegister(e) {
 function handleLogout() {
     api.logout();
     currentUser = null;
-    // Clear forms
     document.querySelectorAll('input').forEach(i => i.value = '');
     showAuth();
-    showToast('Sessão terminada. Até breve! 👋', 'info');
+    showToast('Sessão terminada. Até breve!', 'info');
 }
 
-// --- Profile ---
 async function loadProfile() {
     try {
         const data = await api.getProfile();
         currentUser = data.usuario;
         document.getElementById('user-name').textContent = currentUser;
         document.getElementById('user-avatar').textContent = currentUser.charAt(0).toUpperCase();
-        document.getElementById('welcome-name').textContent = currentUser;
     } catch (err) {
         console.error('Erro ao carregar perfil:', err);
     }
 }
 
-// --- Dashboard Tab Switch ---
-function switchDashboardTab(tab) {
-    // Update nav links
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
-
-    // Update tab content
-    document.querySelectorAll('.dashboard-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(`tab-${tab}`).classList.add('active');
-
-    // Load data for the tab
-    if (tab === 'documents') {
-        loadDocuments();
-    } else if (tab === 'notes') {
-        loadNotes();
+function toggleZettelSidebar() {
+    const layout = document.getElementById('zettel-layout');
+    if (layout) {
+        layout.classList.toggle('sidebar-collapsed');
     }
 }
 
-// --- Upload ---
+function navigateZettel(viewName) {
+    document.querySelectorAll('.nav-menu .nav-item').forEach(item => {
+        const isTarget = item.getAttribute('data-view') === viewName;
+        item.classList.toggle('active', isTarget);
+    });
+
+    document.querySelectorAll('.zettel-view').forEach(v => v.classList.remove('active'));
+
+    if (viewName === 'dashboard') {
+        document.getElementById('view-dashboard').classList.add('active');
+        loadNotesAndRenderDashboard();
+    } else if (viewName === 'search') {
+        document.getElementById('view-search').classList.add('active');
+        const input = document.getElementById('main-search-input');
+        if (input) setTimeout(() => input.focus(), 100);
+    } else if (viewName === 'editor') {
+        document.getElementById('view-editor').classList.add('active');
+    } else if (viewName === 'databases') {
+        document.getElementById('view-databases').classList.add('active');
+        loadDocuments();
+    } else {
+        document.getElementById('view-generic').classList.add('active');
+        setupGenericView(viewName);
+    }
+}
+
 function setupUploadZone() {
     const zone = document.getElementById('upload-zone');
     const fileInput = document.getElementById('file-input');
@@ -215,16 +204,13 @@ function setupUploadZone() {
     if (!zone || !fileInput) return;
 
     zone.addEventListener('click', () => fileInput.click());
-
     zone.addEventListener('dragover', (e) => {
         e.preventDefault();
         zone.classList.add('dragover');
     });
-
     zone.addEventListener('dragleave', () => {
         zone.classList.remove('dragover');
     });
-
     zone.addEventListener('drop', (e) => {
         e.preventDefault();
         zone.classList.remove('dragover');
@@ -237,10 +223,18 @@ function setupUploadZone() {
     });
 }
 
+function triggerFileUpload() {
+    document.getElementById('file-input').click();
+}
+
+function triggerDocsUpload() {
+    const docsInput = document.getElementById('file-input-docs');
+    if (docsInput) docsInput.click();
+    else triggerFileUpload();
+}
+
 async function handleFileUpload(file) {
     if (!file) return;
-
-    // Qualquer arquivo é aceito agora, o backend trata com MarkItDown.
 
     const progress = document.getElementById('upload-progress');
     const progressFill = document.getElementById('progress-fill');
@@ -257,22 +251,19 @@ async function handleFileUpload(file) {
         const result = await api.uploadFile(file);
 
         progressFill.style.width = '100%';
-        progressText.textContent = `✅ ${result.mensagem} (${result.total_chunks} chunks)`;
+        progressText.textContent = `${result.mensagem} (${result.total_chunks} chunks)`;
 
-        showToast(`Documento "${file.name}" enviado com sucesso! 📄`, 'success');
-
-        // Refresh documents
+        showToast(`Documento "${file.name}" enviado com sucesso!`, 'success');
         loadDocuments();
         updateDocCount();
 
-        // Hide progress after 3s
         setTimeout(() => {
             progress.style.display = 'none';
             progressFill.style.width = '0%';
         }, 3000);
     } catch (err) {
         progressFill.style.width = '0%';
-        progressText.textContent = `❌ Erro: ${err.message}`;
+        progressText.textContent = `Erro: ${err.message}`;
         showToast(`Erro ao enviar: ${err.message}`, 'error');
 
         setTimeout(() => {
@@ -280,13 +271,11 @@ async function handleFileUpload(file) {
         }, 4000);
     }
 
-    // Reset file inputs
     document.getElementById('file-input').value = '';
     const docsInput = document.getElementById('file-input-docs');
     if (docsInput) docsInput.value = '';
 }
 
-// --- Documents ---
 async function loadDocuments() {
     const container = document.getElementById('documents-list');
     const emptyState = document.getElementById('empty-docs');
@@ -295,8 +284,8 @@ async function loadDocuments() {
         const data = await api.getDocuments();
         const docs = data.documentos || [];
 
-        // Update stat
-        document.getElementById('stat-docs').textContent = docs.length;
+        const statDocs = document.getElementById('stat-docs');
+        if (statDocs) statDocs.textContent = docs.length;
 
         if (docs.length === 0) {
             container.innerHTML = '';
@@ -309,6 +298,14 @@ async function loadDocuments() {
         container.style.display = 'grid';
 
         const imagesToLoad = [];
+        const svgImage = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+        const svgDoc = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+        const svgEye = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+        const svgEdit = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>';
+        const svgDownload = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+        const svgSearch = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+        const svgTrash = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
         container.innerHTML = docs.map((doc, i) => {
             const isImage = doc.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i);
             if (isImage) imagesToLoad.push(doc.doc_id);
@@ -317,32 +314,31 @@ async function loadDocuments() {
             <div class="doc-card" style="animation-delay: ${i * 0.1}s">
                 ${isImage
                     ? `<img id="img-thumb-${doc.doc_id}" class="doc-icon-thumb" src="/favicon.ico" alt="Thumbnail" />`
-                    : `<div class="doc-icon">${doc.has_text === false ? '🖼️' : '📄'}</div>`
+                    : `<div class="doc-icon">${doc.has_text === false ? svgImage : svgDoc}</div>`
                 }
                 <div class="doc-name">${escapeHtml(doc.filename)}</div>
                 <div class="doc-meta">ID: ${doc.doc_id.substring(0, 8)}...</div>
                 <div class="doc-actions">
                     <button class="btn btn-ghost btn-sm" onclick="previewFileUI('${doc.doc_id}', '${escapeHtml(doc.filename)}')" title="Abrir ficheiro">
-                        👁️
+                        ${svgEye}
                     </button>
                     <button class="btn btn-ghost btn-sm" onclick="renameDocumentUI('${doc.doc_id}', '${escapeHtml(doc.filename)}')" title="Renomear ficheiro">
-                        ✎
+                        ${svgEdit}
                     </button>
                     <button class="btn btn-ghost btn-sm" onclick="downloadFileUI('${doc.doc_id}', '${escapeHtml(doc.filename)}')" title="Baixar">
-                        ⬇️
+                        ${svgDownload}
                     </button>
                     ${doc.has_text !== false ? `<button class="btn btn-ghost btn-sm" onclick="searchInDoc('${escapeHtml(doc.filename)}')">
-                        🔍 Pesquisar
+                        ${svgSearch} Pesquisar
                     </button>` : ''}
                     <button class="btn btn-danger btn-sm" onclick="deleteDocument('${doc.doc_id}', '${escapeHtml(doc.filename)}')">
-                        🗑️ Apagar
+                        ${svgTrash} Apagar
                     </button>
                 </div>
             </div>
         `;
         }).join('');
 
-        // Carregar as thumbnails após inserir no DOM
         imagesToLoad.forEach(id => {
             loadImageThumbnail(id, `img-thumb-${id}`);
         });
@@ -350,9 +346,9 @@ async function loadDocuments() {
     } catch (err) {
         container.innerHTML = `
             <div class="empty-state glass-card" style="grid-column: 1 / -1;">
-                <div class="empty-icon">⚠️</div>
+                <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
                 <h3>Erro ao carregar documentos</h3>
-                <p>${err.message}</p>
+                <p>${escapeHtml(err.message)}</p>
                 <button class="btn btn-primary" onclick="loadDocuments()">Tentar novamente</button>
             </div>
         `;
@@ -364,7 +360,7 @@ async function deleteDocument(docId, filename) {
 
     try {
         await api.deleteDocument(docId);
-        showToast(`Documento "${filename}" apagado! 🗑️`, 'success');
+        showToast(`Documento "${filename}" apagado!`, 'success');
         loadDocuments();
     } catch (err) {
         showToast(`Erro ao apagar: ${err.message}`, 'error');
@@ -395,7 +391,7 @@ async function renameDocumentUI(docId, oldName) {
 
     try {
         await api.renameDocument(docId, newName);
-        showToast(`Documento renomeado para "${newName}"! ✎`, 'success');
+        showToast(`Documento renomeado para "${newName}"!`, 'success');
         loadDocuments();
     } catch (err) {
         showToast(`Erro ao renomear: ${err.message}`, 'error');
@@ -420,118 +416,307 @@ async function loadImageThumbnail(docId, imgElementId) {
 }
 
 function searchInDoc(filename) {
-    switchDashboardTab('search');
+    navigateZettel('search');
     const input = document.getElementById('main-search-input');
-    input.value = '';
-    input.placeholder = `Pesquisar em "${filename}"...`;
-    input.focus();
+    if (input) {
+        input.value = '';
+        input.placeholder = `Pesquisar em "${filename}"...`;
+        input.focus();
+    }
 }
 
 async function updateDocCount() {
     try {
         const data = await api.getDocuments();
-        document.getElementById('stat-docs').textContent = (data.documentos || []).length;
-    } catch (e) { /* silent */ }
+        const statDocs = document.getElementById('stat-docs');
+        if (statDocs) statDocs.textContent = (data.documentos || []).length;
+    } catch (e) { }
 }
 
-// --- Notes ---
 let currentNoteId = null;
 let noteSaveTimeout = null;
+let currentDashboardFilter = 'Recente';
 
-async function loadNotes() {
-    const container = document.getElementById('notes-list');
-
+async function loadNotesAndRenderDashboard() {
     try {
         const data = await api.getNotes();
-        const notes = data.notas || [];
+        window.cachedNotes = data.notas || [];
+    } catch (err) {
+        window.cachedNotes = window.cachedNotes || [];
+    }
 
-        // Update stat
-        document.getElementById('stat-notes').textContent = notes.length;
+    if (!window.cachedNotes || window.cachedNotes.length === 0) {
+        window.cachedNotes = [
+            { id: 'sample-1', title: 'Literatura sobre Sistemas Complexos', content: 'Crescimento acelerado sem estrutura...', category: 'Literatura', updated_at: new Date().toISOString() },
+            { id: 'sample-2', title: 'Permanente: Arquitetura de Software', content: 'Dificuldade na retenção de talentos...', category: 'Permanente', updated_at: new Date().toISOString() },
+            { id: 'sample-3', title: 'Permanente: Princípios de Design Minimalista', content: 'Mudança no comportamento do consumidor...', category: 'Permanente', updated_at: new Date().toISOString() },
+            { id: 'sample-4', title: 'Permanente: Gestão Conhecimento Zettelkasten', content: 'Dependência excessiva de um único canal...', category: 'Permanente', updated_at: new Date().toISOString() },
+            { id: 'sample-5', title: 'Pensamento: Reflexões sobre IA', content: 'Managing multiple projects at the same time...', category: 'Pensamento', updated_at: new Date().toISOString() },
+            { id: 'sample-6', title: 'Pensamento: Organização Pessoal', content: 'Managing multiple projects at the same time...', category: 'Pensamento', updated_at: new Date().toISOString() }
+        ];
+    }
 
-        if (notes.length === 0) {
-            container.innerHTML = `
-                <div style="padding: 1rem; text-align: center; color: var(--text-tertiary);">
-                    Nenhuma anotação ainda.
-                </div>
-            `;
-            return;
+    renderDashboardNotes(currentDashboardFilter);
+    renderNotebooksGrid();
+    renderTimelineEvents();
+}
+
+function filterDashboardNotes(category, btnElement) {
+    currentDashboardFilter = category;
+    if (btnElement) {
+        btnElement.parentElement.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+    renderDashboardNotes(category);
+}
+
+function renderDashboardNotes(filterCategory = 'Recente') {
+    const container = document.getElementById('dashboard-notes-list');
+    if (!container) return;
+
+    let notes = window.cachedNotes || [];
+    if (filterCategory === 'Inbox') {
+        notes = notes.filter(n => n.category === 'Pensamento' || n.category === 'Nota Passageira');
+    } else if (filterCategory === 'Favoritos') {
+        notes = notes.filter(n => n.category === 'Permanente' || n.category === 'Nota Permanente');
+    } else if (filterCategory === 'Tópicos') {
+        notes = notes.filter(n => n.category === 'Literatura' || n.category === 'Nota de Leitura');
+    }
+
+    if (notes.length === 0) {
+        container.innerHTML = '<div style="padding: 1rem; color: var(--text-tertiary); text-align: center;">Nenhuma nota nesta categoria.</div>';
+        return;
+    }
+
+    container.innerHTML = notes.map(note => {
+        const cat = note.category || (note.title.toLowerCase().includes('literatura') ? 'Literatura' : (note.title.toLowerCase().includes('pensamento') ? 'Pensamento' : 'Permanente'));
+        let iconSvg = '<svg class="note-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        if (cat.includes('Literatura') || cat.includes('Leitura')) {
+            iconSvg = '<svg class="note-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+        } else if (cat.includes('Pensamento') || cat.includes('Passageira')) {
+            iconSvg = '<svg class="note-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
         }
 
-        container.innerHTML = notes.map(note => `
-            <div class="note-card ${currentNoteId === note.id ? 'active' : ''}" onclick="openNote(${note.id})">
-                <div class="note-card-title">${escapeHtml(note.title || 'Sem título')}</div>
-                <div class="note-card-date">${new Date(note.updated_at).toLocaleDateString()}</div>
+        return `
+            <div class="note-row" onclick="openNote('${note.id}')">
+                <div class="note-row-left">
+                    ${iconSvg}
+                    <span class="note-row-title">${escapeHtml(note.title)}</span>
+                </div>
+                <span class="tag-badge">${escapeHtml(cat)}</span>
             </div>
-        `).join('');
+        `;
+    }).join('');
+}
 
-        // Cache notes for opening
-        window.cachedNotes = notes;
-    } catch (err) {
-        container.innerHTML = `<div style="color: var(--danger); padding: 1rem;">Erro: ${err.message}</div>`;
+function renderNotebooksGrid() {
+    const container = document.getElementById('dashboard-notebooks-grid');
+    if (!container) return;
+
+    const notebooks = [
+        { title: 'Caderno de Projetos', count: '2 Notes' },
+        { title: 'Caderno de Leitura', count: '3 Notes' },
+        { title: 'Caderno de Ideias', count: '1 Notes' }
+    ];
+
+    container.innerHTML = notebooks.map(nb => `
+        <div class="notebook-card" onclick="navigateZettel('cadernos')">
+            <div class="notebook-card-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span>${escapeHtml(nb.title)}</span>
+            </div>
+            <span class="notebook-card-count">${nb.count}</span>
+        </div>
+    `).join('');
+}
+
+function renderTimelineEvents() {
+    const container = document.getElementById('timeline-events-list');
+    if (!container) return;
+
+    const notes = window.cachedNotes || [];
+    container.innerHTML = notes.slice(0, 4).map(n => `
+        <div class="note-row" onclick="openNote('${n.id}')">
+            <div class="note-row-left">
+                <svg class="note-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span class="note-row-title">${escapeHtml(n.title)}</span>
+            </div>
+            <span class="tag-badge">${new Date(n.updated_at || Date.now()).toLocaleDateString()}</span>
+        </div>
+    `).join('');
+}
+
+function setupGenericView(viewName) {
+    const titleEl = document.getElementById('generic-page-title');
+    const iconEl = document.getElementById('generic-hero-icon');
+    const container = document.getElementById('generic-content-container');
+    const subtabLabel = document.getElementById('generic-subtab-label');
+
+    const viewConfigs = {
+        'recente': {
+            title: 'Recente',
+            icon: '<svg class="pencil-giant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 16 14"/></svg>',
+            mode: 'list'
+        },
+        'inbox': {
+            title: 'Inbox',
+            icon: '<svg class="pencil-giant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+            mode: 'gallery'
+        },
+        'para-revisar': {
+            title: 'Para Revisar',
+            icon: '<svg class="pencil-giant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+            mode: 'gallery'
+        },
+        'favoritos': {
+            title: 'Favoritos',
+            icon: '<svg class="pencil-giant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+            mode: 'gallery'
+        },
+        'cadernos': {
+            title: 'Cadernos',
+            icon: '<svg class="pencil-giant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+            mode: 'gallery'
+        },
+        'topicos': {
+            title: 'Tópicos',
+            icon: '<svg class="pencil-giant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+            mode: 'list'
+        },
+        'timeline': {
+            title: 'Timeline',
+            icon: '<svg class="pencil-giant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+            mode: 'list'
+        },
+        'todas-notas': {
+            title: 'Todas as Notas',
+            icon: '<svg class="pencil-giant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+            mode: 'list'
+        }
+    };
+
+    const cfg = viewConfigs[viewName] || { title: viewName, icon: '<svg class="pencil-giant-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>', mode: 'list' };
+
+    titleEl.textContent = cfg.title;
+    iconEl.innerHTML = cfg.icon;
+    subtabLabel.innerHTML = cfg.mode === 'gallery'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Galeria'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg> Lista';
+
+    const notes = window.cachedNotes || [];
+
+    if (cfg.mode === 'gallery') {
+        container.className = 'gallery-cards-grid';
+        container.innerHTML = notes.map(note => {
+            const cat = note.category || 'Permanente';
+            return `
+                <div class="gallery-card" onclick="openNote('${note.id}')">
+                    <div class="gallery-card-body">
+                        <div class="gallery-card-title">${escapeHtml(note.title)}</div>
+                        <div class="gallery-card-snippet">${escapeHtml(note.content || 'Sem conteúdo')}</div>
+                    </div>
+                    <div class="gallery-card-footer">
+                        <span class="tag-badge">${escapeHtml(cat)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        container.className = 'notes-list-view';
+        container.innerHTML = notes.map(note => {
+            const cat = note.category || 'Permanente';
+            return `
+                <div class="note-row" onclick="openNote('${note.id}')">
+                    <div class="note-row-left">
+                        <svg class="note-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span class="note-row-title">${escapeHtml(note.title)}</span>
+                    </div>
+                    <span class="tag-badge">${escapeHtml(cat)}</span>
+                </div>
+            `;
+        }).join('');
     }
 }
 
-function createNewNote() {
+function quickCreateNote(typeCategory) {
+    createNewNote(typeCategory);
+}
+
+function createNewNote(category = 'Nota Passageira') {
     currentNoteId = null;
     document.getElementById('note-title').value = '';
     document.getElementById('note-content').value = '';
+    const catSelect = document.getElementById('note-category-select');
+    if (catSelect) catSelect.value = category;
 
-    document.getElementById('empty-note-state').style.display = 'none';
-    document.getElementById('note-editor-container').style.display = 'flex';
+    navigateZettel('editor');
     document.getElementById('note-title').focus();
-
-    // Create immediately so it has an ID
     saveNote(true);
 }
 
 function openNote(id) {
-    currentNoteId = id;
-    const note = window.cachedNotes?.find(n => n.id === id);
+    const note = window.cachedNotes?.find(n => String(n.id) === String(id));
     if (!note) return;
 
+    currentNoteId = note.id;
     document.getElementById('note-title').value = note.title;
-    document.getElementById('note-content').value = note.content;
+    document.getElementById('note-content').value = note.content || '';
+    const catSelect = document.getElementById('note-category-select');
+    if (catSelect) catSelect.value = note.category || 'Nota Permanente';
 
-    document.getElementById('empty-note-state').style.display = 'none';
-    document.getElementById('note-editor-container').style.display = 'flex';
-
-    // Update active state in list
-    loadNotes();
+    navigateZettel('editor');
 }
 
 function handleNoteInput() {
     const indicator = document.getElementById('autosave-indicator');
-    indicator.textContent = 'Salvando...';
-    indicator.className = 'autosave-indicator saving';
+    if (indicator) {
+        indicator.textContent = 'Salvando...';
+        indicator.className = 'autosave-indicator saving';
+    }
 
     clearTimeout(noteSaveTimeout);
-    noteSaveTimeout = setTimeout(() => saveNote(false), 1000); // 1s debounce
+    noteSaveTimeout = setTimeout(() => saveNote(false), 1000);
 }
 
 async function saveNote(isNew = false) {
     const title = document.getElementById('note-title').value.trim() || 'Nova Anotação';
     const content = document.getElementById('note-content').value;
+    const catSelect = document.getElementById('note-category-select');
+    const category = catSelect ? catSelect.value : 'Nota Passageira';
     const indicator = document.getElementById('autosave-indicator');
 
-    indicator.textContent = 'Salvando...';
-    indicator.className = 'autosave-indicator saving';
+    if (indicator) {
+        indicator.textContent = 'Salvando...';
+        indicator.className = 'autosave-indicator saving';
+    }
 
     try {
-        if (!currentNoteId || isNew) {
+        if (!currentNoteId || isNew || String(currentNoteId).startsWith('sample')) {
             const result = await api.createNote(title, content);
-            currentNoteId = result.nota.id;
+            currentNoteId = result.nota ? result.nota.id : result.doc_id;
         } else {
             await api.updateNote(currentNoteId, title, content);
         }
 
-        indicator.textContent = '✓ Salvo automaticamente';
-        indicator.className = 'autosave-indicator saved';
+        if (indicator) {
+            indicator.textContent = '✓ Salvo automaticamente';
+            indicator.className = 'autosave-indicator saved';
+        }
 
-        // Reload list to update titles/dates
-        loadNotes();
+        const existing = window.cachedNotes?.find(n => String(n.id) === String(currentNoteId));
+        if (existing) {
+            existing.title = title;
+            existing.content = content;
+            existing.category = category;
+        } else {
+            window.cachedNotes = window.cachedNotes || [];
+            window.cachedNotes.unshift({ id: currentNoteId, title, content, category, updated_at: new Date().toISOString() });
+        }
     } catch (err) {
-        indicator.textContent = '❌ Erro ao salvar';
-        indicator.className = 'autosave-indicator saving';
+        if (indicator) {
+            indicator.textContent = 'Erro ao salvar';
+            indicator.className = 'autosave-indicator saving';
+        }
     }
 }
 
@@ -540,20 +725,19 @@ async function handleDeleteCurrentNote() {
     if (!confirm('Tem a certeza que quer apagar esta anotação?')) return;
 
     try {
-        await api.deleteNote(currentNoteId);
-        showToast('Anotação apagada com sucesso! 🗑️', 'success');
+        if (!String(currentNoteId).startsWith('sample')) {
+            await api.deleteNote(currentNoteId);
+        }
+        showToast('Anotação apagada com sucesso!', 'success');
 
+        window.cachedNotes = (window.cachedNotes || []).filter(n => String(n.id) !== String(currentNoteId));
         currentNoteId = null;
-        document.getElementById('empty-note-state').style.display = 'flex';
-        document.getElementById('note-editor-container').style.display = 'none';
-
-        loadNotes();
+        navigateZettel('dashboard');
     } catch (err) {
         showToast('Erro ao apagar: ' + err.message, 'error');
     }
 }
 
-// --- Search ---
 async function handleQuickSearch() {
     const input = document.getElementById('quick-search-input');
     const query = input.value.trim();
@@ -579,6 +763,8 @@ async function handleMainSearch() {
 
 async function performSearch(query, containerId) {
     const container = document.getElementById(containerId);
+    if (!container) return;
+
     container.innerHTML = `
         <div class="loading-state">
             <div class="spinner"></div>
@@ -590,24 +776,28 @@ async function performSearch(query, containerId) {
         const data = await api.search(query);
         searchCount++;
         localStorage.setItem('searchCount', searchCount.toString());
-        document.getElementById('stat-searches').textContent = searchCount;
+        const statElem = document.getElementById('stat-searches');
+        if (statElem) statElem.textContent = searchCount;
 
         if (!data.resultados || data.resultados.length === 0) {
             container.innerHTML = `
                 <div class="result-card">
                     <p class="result-text" style="text-align:center;">
                         Nenhum resultado encontrado para "<strong>${escapeHtml(query)}</strong>". 
-                        Tente enviar mais documentos ou reformular a pergunta.
+                        Tente criar mais anotações ou reformular a pesquisa.
                     </p>
                 </div>
             `;
             return;
         }
 
+        const noteIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16" style="vertical-align:middle;margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        const docIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16" style="vertical-align:middle;margin-right:4px;"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+
         container.innerHTML = data.resultados.map((r, i) => `
             <div class="result-card" style="animation-delay: ${i * 0.1}s">
                 <div class="result-header">
-                    <span class="result-filename">${r.source === 'nota' ? '📝' : '📄'} ${escapeHtml(r.filename)}</span>
+                    <span class="result-filename">${r.source === 'nota' ? noteIcon : docIcon} ${escapeHtml(r.filename)}</span>
                     <span class="result-score">${Math.round(r.relevancia * 100)}% relevante</span>
                 </div>
                 <p class="result-text">${escapeHtml(r.texto)}</p>
@@ -618,17 +808,15 @@ async function performSearch(query, containerId) {
         container.innerHTML = `
             <div class="result-card">
                 <p class="result-text" style="color: var(--danger);">
-                    ❌ Erro na pesquisa: ${err.message}
+                    Erro na pesquisa: ${escapeHtml(err.message)}
                 </p>
             </div>
         `;
     }
 }
 
-// --- Keyboard Shortcuts ---
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-        // Enter in search inputs
         if (e.key === 'Enter') {
             if (document.activeElement.id === 'quick-search-input') {
                 handleQuickSearch();
@@ -639,16 +827,20 @@ function setupKeyboardShortcuts() {
     });
 }
 
-// --- Toast System ---
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
-    const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+    const icons = {
+        success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>',
+        error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+        info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+        warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    };
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `
-        <span class="toast-icon">${icons[type]}</span>
-        <span class="toast-message">${message}</span>
+        <span class="toast-icon">${icons[type] || ''}</span>
+        <span class="toast-message">${escapeHtml(message)}</span>
         <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
     `;
 
@@ -660,26 +852,20 @@ function showToast(message, type = 'info') {
     }, 4000);
 }
 
-// --- Utils ---
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// --- Modals & Authentication Helpers ---
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('active');
-    }
+    if (modal) modal.classList.add('active');
 }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.remove('active');
-    }
+    if (modal) modal.classList.remove('active');
 }
 
 function checkPasswordRequirements(password, prefix) {
@@ -711,7 +897,7 @@ async function handleForgotPassword(e) {
     btn.classList.add('loading');
     try {
         const res = await api.forgotPassword(email);
-        showToast(res.mensagem || 'Link de recuperação enviado (verifique logs)!', 'success');
+        showToast(res.mensagem || 'Link de recuperação enviado!', 'success');
         closeModal('forgot-password-modal');
     } catch (err) {
         showToast(err.message, 'error');

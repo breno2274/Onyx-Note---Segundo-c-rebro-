@@ -1,22 +1,17 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
-import os
 
-app = FastAPI()
+app = FastAPI(title="Onyx Note User Service")
 
-# A mesma senha secreta do auth-service
 SECRET_KEY = os.getenv("SECRET_KEY", "chave_padrao_insegura_para_testes")
 ALGORITHM = "HS256"
-
-# A mágica muda aqui: Isso cria a caixinha pra você colar o token!
 security = HTTPBearer()
 
 def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    # Pega apenas o texto do token
     token = credentials.credentials
     try:
-        # Tenta ler o crachá
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
@@ -30,5 +25,5 @@ def ler_meus_dados(username: str = Depends(verificar_token)):
     return {
         "usuario": username,
         "mensagem": "Acesso autenticado com sucesso.",
-        "status": "Acesso Autorizado"
+        "status": "Autorizado"
     }

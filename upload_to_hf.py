@@ -1,10 +1,7 @@
-import os
 from huggingface_hub import HfApi
 
 api = HfApi()
-
-repo_id = "breno2274/onyxnote"
-folder_path = "."
+repo_id = "breno2274/OnyxNote"
 
 ignore_patterns = [
     ".git",
@@ -21,14 +18,12 @@ ignore_patterns = [
     ".gemini*"
 ]
 
-print(f"Uploading {folder_path} to {repo_id}...")
-
+print(f"Uploading . to {repo_id}...")
 api.upload_folder(
-    folder_path=folder_path,
+    folder_path=".",
     repo_id=repo_id,
     repo_type="space",
     ignore_patterns=ignore_patterns,
-    commit_message="chore: secure environment variables and remove sensitive files for public release"
+    commit_message="refactor: clean up comments and code structure"
 )
-
 print("Upload complete!")

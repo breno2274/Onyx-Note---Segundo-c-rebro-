@@ -1,8 +1,3 @@
-/**
- * Segundo Cérebro - API Client
- * Comunicação com o API Gateway
- */
-
 const API_BASE = '/api';
 
 class SegundoCerebroAPI {
@@ -10,7 +5,6 @@ class SegundoCerebroAPI {
         this.token = localStorage.getItem('token');
     }
 
-    // --- Helper para fazer requests ---
     async request(endpoint, options = {}) {
         const url = `${API_BASE}${endpoint}`;
         const headers = options.headers || {};
@@ -41,10 +35,30 @@ class SegundoCerebroAPI {
             throw new Error('Sessão expirada. Faça login novamente.');
         }
 
-        const data = await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        let data;
+
+        if (contentType.includes('application/json')) {
+            try {
+                data = await response.json();
+            } catch (e) {
+                const rawText = await response.text();
+                throw new Error(`Erro ao ler resposta do servidor. Status: ${response.status}`);
+            }
+        } else {
+            const rawText = await response.text();
+            if (!response.ok) {
+                throw new Error(`Servidor em inicialização ou erro de conexão (HTTP ${response.status}). Tente novamente em instantes.`);
+            }
+            try {
+                data = JSON.parse(rawText);
+            } catch (e) {
+                data = { rawText };
+            }
+        }
 
         if (!response.ok) {
-            const detail = data.detail || data.message || 'Erro desconhecido';
+            const detail = data.detail || data.message || `Erro no servidor (HTTP ${response.status})`;
             const errorMsg = typeof detail === 'object' ? JSON.stringify(detail) : detail;
             throw new Error(errorMsg);
         }
@@ -52,14 +66,12 @@ class SegundoCerebroAPI {
         return data;
     }
 
-    // --- Auth ---
     async register(username, password) {
-        const data = await this.request('/register', {
+        return await this.request('/register', {
             method: 'POST',
             json: { username, password },
             noAuth: true,
         });
-        return data;
     }
 
     async login(username, password) {
@@ -98,12 +110,10 @@ class SegundoCerebroAPI {
         return !!this.token;
     }
 
-    // --- User ---
     async getProfile() {
         return await this.request('/users/me');
     }
 
-    // --- Documents ---
     async uploadFile(file) {
         const formData = new FormData();
         formData.append('file', file);
@@ -170,12 +180,9 @@ class SegundoCerebroAPI {
 
         const objectUrl = window.URL.createObjectURL(blob);
         window.open(objectUrl, '_blank');
-
-        // Timeout para revogar a URL depois de abrir a nova tab
         setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60000);
     }
 
-    // --- Notes ---
     async createNote(title, content) {
         return await this.request('/notes', {
             method: 'POST',
@@ -201,5 +208,4 @@ class SegundoCerebroAPI {
     }
 }
 
-// Instância global
 const api = new SegundoCerebroAPI();
