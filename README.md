@@ -46,8 +46,5 @@ Certifique-se de que tem o **Docker** e o **Docker Compose** instalados na sua m
 
 ---
 
-## Configurações de Autenticação (Opcional)
-Para habilitar o Login com Google, configure as variáveis `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` como Secrets no painel do HF Spaces (ou no `.env` para execução local).
 
----
-*Desenvolvido com foco em minimalismo e eficiência.*
+*Desenvolvido com foco em eficiência.*
