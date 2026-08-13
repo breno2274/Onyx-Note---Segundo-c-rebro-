@@ -24,6 +24,6 @@ api.upload_folder(
     repo_id=repo_id,
     repo_type="space",
     ignore_patterns=ignore_patterns,
-    commit_message="refactor: clean up comments and code structure"
+    commit_message="feat: UI redesign, navigation polish and bug fixes"
 )
 print("Upload complete!")
