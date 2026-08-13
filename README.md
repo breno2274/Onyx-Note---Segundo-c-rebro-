@@ -1,14 +1,6 @@
----
-title: Onyx Note
-emoji: 📝
-colorFrom: gray
-colorTo: gray
-sdk: docker
-app_port: 7860
-pinned: false
----
 
-# Onyx Note - O Seu Segundo Cérebro
+
+# Onyx Note - Segundo Cérebro
 
 **Onyx Note** é uma plataforma minimalista de gestão de conhecimento projetada para organizar informações, processar documentos e expandir as capacidades cognitivas através da inteligência artificial.
 
